@@ -1,7 +1,6 @@
 # Kafka Schema Registry Tool
 
 [![Crates.io](https://img.shields.io/crates/v/ksrt.svg)](https://crates.io/crates/ksrt/)
-[![Docs.rs](https://docs.rs/ksrt/badge.svg)](https://docs.rs/ksrt/)
 
 This command-line tool aims to make it easier for developers who utilize the [Confluent Schema Registry](https://github.com/confluentinc/schema-registry) to manage message schemas stored in it.
 

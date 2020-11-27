@@ -10,6 +10,7 @@ keywords = ["kafka", "schema", "protobuf"]
 
 [dependencies]
 anyhow = "1.0"
+avro-rs = "0.11"
 futures = "0.3"
 gumdrop = "0.8"
 log = "0.4"
@@ -32,3 +33,17 @@ default = ["log-level-info"]
 log-level-info = ["log/release_max_level_info"]
 log-level-debug = ["log/release_max_level_debug"]
 log-level-trace = ["log/release_max_level_trace"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 1
+
+[package.metadata.rpm]
+package = "ksrt"
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+ksrt = { path = "/usr/bin/ksrt" }
