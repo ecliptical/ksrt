@@ -19,7 +19,11 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --all-features  
+          args: --release
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ksrt-linux
+          path: /home/runner/work/ksrt/ksrt/target/release/ksrt
   build-macos:
     runs-on: macos-latest
     steps:
@@ -30,4 +34,8 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --all-features    
+          args: --release
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ksrt-macos
+          path: /home/runner/work/ksrt/ksrt/target/release/ksrt
