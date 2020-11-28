@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -42,12 +44,26 @@ jobs:
           strip ksrt
           tar czvf "ksrt-${{ matrix.artifact_prefix }}.tar.gz" ksrt
           shasum -a 256 "ksrt-${{ matrix.artifact_prefix }}.tar.gz" > "ksrt-${{ matrix.artifact_prefix }}.sha256"
+      - name: Installing RPM packager
+        uses: actions-rs/install@v0.1
+        if: ${{ matrix.target }} == "x86_64-unknown-linux-gnu"
+        with:
+          crate: cargo-rpm
+          version: latest
+      - name: Packaging RPM
+        uses: actions-rs/cargo@v1
+        if: ${{ matrix.target }} == "x86_64-unknown-linux-gnu"
+        with:
+          command: rpm
+          toolchain: "${{ matrix.rust }}"
+          args: build --no-cargo-build --target "${{ matrix.target }}"
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
             "target/${{ matrix.target }}/release/ksrt-${{ matrix.artifact_prefix }}.tar.gz"
             "target/${{ matrix.target }}/release/ksrt-${{ matrix.artifact_prefix }}.sha256"
+            "target/${{ matrix.target }}/release/ksrt-${{ matrix.artifact_prefix }}.rpm"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
