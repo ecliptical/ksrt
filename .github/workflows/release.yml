@@ -68,10 +68,6 @@ jobs:
       with:
         toolchain: "${{ matrix.rust }}"
         override: true
-    - name: Install prerequisites
-      shell: bash
-      run: |
-        DEBIAN_FRONTEND=noninteractive sudo apt install -y rpm
     - name: Installing RPM packager
       uses: actions-rs/install@v0.1
       with:
@@ -85,18 +81,12 @@ jobs:
       with:
         name: "ksrt-${{ matrix.artifact_prefix }}"
         path: "target/release"
-    - name: "Show what we've got"
-      shell: bash
-      run: |
-        pwd
-        ls -l
-        find . -type f
     - name: Build RPM
       uses: actions-rs/cargo@v1
       with:
         command: rpm
         toolchain: "${{ matrix.rust }}"
-        args: build -v --no-cargo-build --target "${{ matrix.target }}"
+        args: build -v --no-cargo-build
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
