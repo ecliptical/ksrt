@@ -44,15 +44,7 @@ jobs:
         strip ksrt
         tar czvf "ksrt-${{ matrix.artifact_prefix }}.tar.gz" ksrt
         shasum -a 256 "ksrt-${{ matrix.artifact_prefix }}.tar.gz" > "ksrt-${{ matrix.artifact_prefix }}.sha256"
-#     - name: Releasing assets
-#       uses: softprops/action-gh-release@v1
-#       with:
-#         files: |
-#           "target/${{ matrix.target }}/release/ksrt-${{ matrix.artifact_prefix }}.tar.gz"
-#           "target/${{ matrix.target }}/release/ksrt-${{ matrix.artifact_prefix }}.sha256"
-#       env:
-#         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    - name: Uploading assets
+    - name: Uploading artifacts
       uses: actions/upload-artifact@v2
       with:
         name: "ksrt-${{ matrix.artifact_prefix }}"
@@ -76,11 +68,16 @@ jobs:
       with:
         toolchain: "${{ matrix.rust }}"
         override: true
+    - name: Installing prerequisites
+      shell: bash
+      run: |
+        DEBIAN_FRONTEND=noninteractive sudo apt install -y rpm
     - name: Installing RPM packager
       uses: actions-rs/install@v0.1
       with:
         crate: cargo-rpm
         version: latest
+        use-tool-cache: true
     - name: Checking out repository
       uses: actions/checkout@v2
     - name: Downloading artifacts
@@ -94,11 +91,28 @@ jobs:
         command: rpm
         toolchain: "${{ matrix.rust }}"
         args: build --no-cargo-build --target "${{ matrix.target }}"
-    - name: Uploading assets
+    - name: Uploading artifacts
       uses: actions/upload-artifact@v2
       with:
         name: "ksrt-rpm"
-        path: "target/release/rpmbuild/RPMs/*/"
+        path: "target/release/rpmbuild/RPMs/x86_64/ksrt-*.x86_64.rpm"
+
+  release:
+    name: Creating release
+    needs: [build, package]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Downloading artifacts
+      uses: actions/download-artifact@v2
+    - name: Releasing artifacts
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          "ksrt-*/ksrt-*.tar.gz"
+          "ksrt-*/ksrt-*.sha256"
+          "ksrt-*/ksrt-*.rpm"
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
 #   publish:
 #     name: Publishing to Crates.io
