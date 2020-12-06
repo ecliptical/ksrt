@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Building for ${{ matrix.os }}
+    name: Build for ${{ matrix.os }}
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
@@ -24,34 +24,34 @@ jobs:
           artifact_prefix: linux
           target: x86_64-unknown-linux-gnu
     steps:
-    - name: Installing Rust toolchain
+    - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
         toolchain: "${{ matrix.rust }}"
         override: true
-    - name: Checking out repository
+    - name: Check out repository
       uses: actions/checkout@v2
-    - name: Executing cargo build
+    - name: Execute cargo build
       uses: actions-rs/cargo@v1
       with:
         command: build
         toolchain: "${{ matrix.rust }}"
         args: --release --target "${{ matrix.target }}"
-    - name: Packaging final binary
+    - name: Package final binary
       shell: bash
       run: |
         cd "target/${{ matrix.target }}/release"
         strip ksrt
         tar czvf "ksrt-${{ matrix.artifact_prefix }}.tar.gz" ksrt
         shasum -a 256 "ksrt-${{ matrix.artifact_prefix }}.tar.gz" > "ksrt-${{ matrix.artifact_prefix }}.sha256"
-    - name: Uploading artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
         name: "ksrt-${{ matrix.artifact_prefix }}"
         path: "target/${{ matrix.target }}/release/"
 
   package:
-    name: Packaging artifacts
+    name: Package artifacts
     needs: build
     runs-on: "${{ matrix.os }}"
     strategy:
@@ -63,12 +63,12 @@ jobs:
           artifact_prefix: linux
           target: x86_64-unknown-linux-gnu
     steps:
-    - name: Installing Rust toolchain
+    - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
         toolchain: "${{ matrix.rust }}"
         override: true
-    - name: Installing prerequisites
+    - name: Install prerequisites
       shell: bash
       run: |
         DEBIAN_FRONTEND=noninteractive sudo apt install -y rpm
@@ -78,33 +78,45 @@ jobs:
         crate: cargo-rpm
         version: latest
         use-tool-cache: true
-    - name: Checking out repository
+    - name: Check out repository
       uses: actions/checkout@v2
-    - name: Downloading artifacts
+    - name: Download artifacts
       uses: actions/download-artifact@v2
       with:
         name: "ksrt-${{ matrix.artifact_prefix }}"
         path: "target/release"
-    - name: Packaging RPM
+    - name: "Show what we've got"
+      shell: bash
+      run: |
+        pwd
+        ls -l
+        find . -type f
+    - name: Build RPM
       uses: actions-rs/cargo@v1
       with:
         command: rpm
         toolchain: "${{ matrix.rust }}"
-        args: build --no-cargo-build --target "${{ matrix.target }}"
-    - name: Uploading artifacts
+        args: build -v --no-cargo-build --target "${{ matrix.target }}"
+    - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
         name: "ksrt-rpm"
         path: "target/release/rpmbuild/RPMs/x86_64/ksrt-*.x86_64.rpm"
 
   release:
-    name: Creating release
+    name: Create release
     needs: [build, package]
     runs-on: ubuntu-latest
     steps:
-    - name: Downloading artifacts
+    - name: Download artifacts
       uses: actions/download-artifact@v2
-    - name: Releasing artifacts
+    - name: "Show what we've got"
+      shell: bash
+      run: |
+        pwd
+        ls -l
+        find . -type f
+    - name: Release artifacts
       uses: softprops/action-gh-release@v1
       with:
         files: |
