@@ -113,6 +113,7 @@ jobs:
     - name: Release artifacts
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ github.event.inputs.release_name || github.ref }}
         files: |
           "ksrt-*/ksrt-*.tar.gz"
           "ksrt-*/ksrt-*.sha256"
