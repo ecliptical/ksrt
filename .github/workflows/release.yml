@@ -54,8 +54,8 @@ jobs:
         name: "ksrt-${{ matrix.artifact_prefix }}"
         path: "target/${{ matrix.target }}/release/"
 
-  package:
-    name: Package artifacts
+  build-rpm:
+    name: Build rpm packages
     needs: build
     runs-on: "${{ matrix.os }}"
     strategy:
@@ -95,29 +95,67 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: "ksrt-rpm"
-        path: "target/release/rpmbuild/RPMs/x86_64/"
+        path: "target/release/rpmbuild/RPMS/x86_64/"
+
+  build-deb:
+    name: Build deb packages
+    needs: build
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        include:
+        - os: ubuntu-latest
+          artifact_prefix: linux
+          target: x86_64-unknown-linux-gnu
+    steps:
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: "${{ matrix.rust }}"
+        override: true
+    - name: Install cargo-deb
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-deb
+        version: latest
+        use-tool-cache: true
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: "ksrt-${{ matrix.artifact_prefix }}"
+        path: "target/release"
+    - name: Execute cargo deb
+      uses: actions-rs/cargo@v1
+      with:
+        command: deb
+        toolchain: "${{ matrix.rust }}"
+        args: -v --no-build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: "ksrt-deb"
+        path: "target/debian/"
 
   release:
     name: Create release
-    needs: [build, package]
+    needs: [build, build-rpm, build-deb]
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v2
-    - name: "Show what we've got"
-      shell: bash
-      run: |
-        pwd
-        ls -l
-        find . -type f
     - name: Release artifacts
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.event.inputs.release_name || github.ref }}
         files: |
-          "ksrt-*/ksrt-*.tar.gz"
-          "ksrt-*/ksrt-*.sha256"
-          "ksrt-*/ksrt-*.rpm"
+          ksrt-*/ksrt-*.tar.gz
+          ksrt-*/ksrt-*.sha256
+          ksrt-*/ksrt-*.rpm
+          ksrt-*/ksrt_*.deb
       env:
         GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
